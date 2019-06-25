@@ -263,9 +263,10 @@ class ResourceGenerator(object):
                 if k not in SaltNodesCommandParser.ignore_attributes + SaltNodesCommandParser.ignore_servernode})
 
             # Create tags from grains
+            resources[self._server_node_name]['tags'] = ['rundeck_server']
             tags = self._create_tags(self._server_node_name, local_grains)
             if len(tags) > 0:
-                resources[self._server_node_name]['tags'] = tags
+                resources[self._server_node_name]['tags'].extend(tags)
 
         # Map grains into a Rundeck resource dict
         for minion, minion_grains in mine.iteritems():
