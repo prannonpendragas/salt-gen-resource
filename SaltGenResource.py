@@ -356,7 +356,7 @@ class ResourceGenerator:
             )
 
             # Create tags from grains
-            resources[self._server_node_name]['tags'] = ['rundeck_server']
+            self.resources[self._server_node_name]['tags'] = ['rundeck_server']
             tags = self._create_tags(self._server_node_name, local_grains)
             if len(tags) > 0:
                 self.resources[self._server_node_name]["tags"] = tags
