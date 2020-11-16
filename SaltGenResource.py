@@ -364,7 +364,7 @@ class ResourceGenerator:
         # Map grains into a Rundeck resource dict
         for minion, minion_grains in six.iteritems(mine):
             # Map required node attributes from grains
-            resources[minion] = {
+            self.resources[minion] = {
                 'hostname':   minion_grains['fqdn']+".private",
                 'osName':     minion_grains['kernel'],
                 'osVersion':  minion_grains['kernelrelease'],
