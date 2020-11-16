@@ -1,4 +1,6 @@
 *.pyc
-.vagrant/
 __pycache__/
 .idea
+.kitchen/
+.bundle/
+vendor/

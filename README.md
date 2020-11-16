@@ -4,17 +4,17 @@ A script that uses Mine function of SaltStack to populate nodes
 in Rundeck. In addition to providing nodes, any Salt Grain can be
 added as a node attribute or tag.
 
-You must have a Salt Minion running on the Rundeck server.
+This script requires that a Salt Minion be running on the Rundeck server.
 
 ## Installation
 
 ### Resource Model Provider Script
 
-The only file required from this repository is [SaltGenResource.py](SaltGenResource.py). Copy it to your Rundeck server, in the location where your keep your Rundeck configuration scripts (e.g. `/opt/rundeck/scripts`). You can also clone this entire repository to your scripts location to make future updates easy.
+The only file required from this repository is [SaltGenResource.py](SaltGenResource.py). Copy it to the Rundeck server, in the location where Rundeck configuration scripts are stored (e.g. `/opt/rundeck/scripts`). As an alternative, this entire repository can be cloned to make future updates easy.
 
 ### Sudo policy
 
-Because the script is essentially running the Salt Minion, it must be run as root. Add this to your sudoers policy to permit Rundeck to run it:
+Because the script is essentially running the Salt Minion, it must be run as root. Add the following snippet to the sudoers policy to permit Rundeck to run it. Change the path to match the installed location of the script.
 ```
 Cmnd_Alias SALT_GEN_RESOURCE = /opt/rundeck/scripts/salt-gen-resource/SaltGenResource.py
 rundeck ALL=(root) NOPASSWD: SALT_GEN_RESOURCE
@@ -25,19 +25,19 @@ Defaults!SALT_GEN_RESOURCE !requiretty
 
 The project configuration can be edited through the web UI, or by editing the file on disk. The web UI is recommended for several reasons:
 
-1. It works whether you are using filesystem-backed projects or database-backed projects. If you are using database-backed projects, there is no file on disk to edit.
+1. It works whether using filesystem-backed projects or database-backed projects. If using database-backed projects, there is no file on disk to edit.
 2. It knows the location of the file. Rundeck can be installed in a variety of configurations, and all of them place configuration files in different places.
-3. It handles string escaping. If you insist on editing the file directly, you must follow the escaping rules of Java `.properties` files.
+3. It handles string escaping. If editing the file directly, the escaping rules of Java `.properties` files must be followed.
 
-Edit your Rundeck project configuration to include a new node source script. Change the `file` parameter to match the location where you installed `SaltGenResource.py`.
+Edit the Rundeck project configuration to include a new node source script. Change the `file` parameter to match the installed location of `SaltGenResource.py`.
 ```
-resources.source.2.config.args=-G virtual:kvm
-resources.source.2.config.file=/opt/rundeck/scripts/SaltGenResource.py
+resources.source.2.type=script
 resources.source.2.config.format=resourceyaml
 resources.source.2.config.interpreter=sudo
-resources.source.2.type=script
+resources.source.2.config.file=/opt/rundeck/scripts/SaltGenResource.py
+resources.source.2.config.args=-G virtual:kvm
 ```
-**Note:** Be careful about deleting an existing node source from the configuration file. One of those sources usually provides the 'server node', which is necessary for certiain Rundeck workflows. The server node is **not** provided by `SaltGenResource.py` by default. 
+**Note:** Be careful about deleting an existing node source from the configuration file. One of those sources usually provides the 'server node', which is necessary for certain Rundeck workflows. The server node is **not** provided by `SaltGenResource.py` by default. 
 Add additional node sources as necessary, by using another number in the properties (resources.source._#_.config), or configure `SaltGenResource.py` to provide the server node with `--include-server-node`.
 
 ### Salt Mine
@@ -54,11 +54,13 @@ mine_functions:
 ```
 When using a function alias (`allgrains`, in the example above), be sure to supply the name with `--mine-function`.
 
-See the [online documentation](https://docs.saltstack.com/en/latest/topics/mine/#the-salt-mine) for more detail.
+**Note:** Salt Mine values are refreshed according to the interval defined by the `mine_interval` option (60 minutes, by default). When the mine configuration is created or changed, the values will not be updated until the next interval elapses. To force an immediate update, use the [`mine.update`](https://docs.saltstack.com/en/latest/ref/modules/all/salt.modules.mine.html#salt.modules.mine.update) function.
+
+See the Salt Mine [online documentation](https://docs.saltstack.com/en/latest/topics/mine/#the-salt-mine) for more detail.
 
 ## Configuration
 
-Running `SaltGenResource.py --help` will tell you just about everything you need to know:
+For usage instructions, run `SaltGenResource.py --help`:
 ```
 Usage: SaltGenResource.py [options] <target> [<attr>=<value> ...]
 
@@ -167,7 +169,7 @@ resources.source.2.config.args=*
 ```
 
 ### Node Attributes
-Node attributes can be added by including the `--attributes` argument. This can be used to add any grain value as a node attribute in Rundeck. Note that the value of the grain must be a single value (not a list or dictionary). Nested grains can be specified using `:` as a delimiter, such as `--attributes locale_info:defaultlanguage`. The delimiter can be changed using the `--delimiter` command-line argument.
+Node attributes can be added by including the `--attributes` argument. This can be used to add any grain value as a node attribute in Rundeck. Note that the value of the grain must not be a dictionary. If the requested grain is a list, the first element of the list will be used as the attribute value. Nested grains can be specified using `:` as a delimiter, such as `--attributes locale_info:defaultlanguage`. The delimiter can be changed using the `--delimiter` command-line argument.
 Requesting an attribute for a grain that does not exist will emit a warning and continue without adding the attribute.
 
 ### Node Tags
@@ -175,7 +177,7 @@ Node tags can be added by including the `--tags` argument. This is particularly 
 Requesting a tag for a grain that does not exist will emit a warning and continue without adding the tag.
 
 ### Mine Function
-By default, this script depends on Salt Mine having access to `grains.items` on every minion. If you have an alias in place for that function, specify it using the `--mine-function` option.
+By default, this script depends on Salt Mine having access to `grains.items` on every minion. If an alias is configured for that function, specify it using the `--mine-function` option.
 
 ### Static Attributes
 Additional attributes that are not provided by a grain can be specified by including key value pairs on the command line, after the targeting expression. These static attributes will be added to all generated node resources. For example:
@@ -184,7 +186,7 @@ SaltGenResource.py '*' username='rduser'
 ```
 
 ### Configuration File
-SaltGenResource loads its configuration from the standard Minion configuration files, normally located at `/etc/salt/minion` and `/etc/salt/minion.d/*.conf` on Linux. This path is different on other operating systems, and can be overriden using the `-c` or `--config-dir` command-line options.
+SaltGenResource loads its configuration from the standard Minion configuration files, normally located at `/etc/salt/minion` and `/etc/salt/minion.d/*.conf` on Linux. This path is different on other operating systems, and can be overridden using the `-c` or `--config-dir` command-line options.
 In addition to the normal, [documented](https://docs.saltstack.com/en/latest/ref/configuration/minion.html) configuration, there are two additional options to control file-based logging:
 
 | Option | Default Value | Description |
@@ -195,6 +197,10 @@ In addition to the normal, [documented](https://docs.saltstack.com/en/latest/ref
 ### Example
 A more complete example might look like this:
 ```
+resources.source.2.type=script
+resources.source.2.config.format=resourceyaml
+resources.source.2.config.interpreter=sudo
+resources.source.2.config.file=/opt/rundeck/scripts/SaltGenResource.py
 resources.source.2.config.args=--mine-function allgrains --attributes domain,selinux:enabled --tags roles,init -S 10.0.1.0/24 username=rduser
 ```
 1. Use the mine function alias `allgrains` instead of `grains.items`.

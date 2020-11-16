@@ -1,6 +1,5 @@
 __cli: SaltGenResource.py
 __role: minion
-cachedir: /home/amendlik/develop/salt-gen-resource-py2/var/cache/salt/minion
 grains:
   fqdn: minion1.example.com
   kernel: Linux
@@ -8,5 +7,14 @@ grains:
   cpuarch: x86_64
   os: RedHat
   os_family: RedHat
+  colors:
+    - red
+    - green
+  instruments:
+    - - oboe
+      - tuba
+    - - violin
+      - cello
+  virtual: false
 selected_target_option: glob
 tgt: '*'
