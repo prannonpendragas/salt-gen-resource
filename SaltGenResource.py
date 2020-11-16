@@ -365,7 +365,7 @@ class ResourceGenerator:
         for minion, minion_grains in six.iteritems(mine):
             # Map required node attributes from grains
             self.resources[minion] = {
-                'hostname':   minion_grains['fqdn']+".private",
+                'hostname':   minion_grains['nodename']+".private",
                 'osName':     minion_grains['kernel'],
                 'osVersion':  minion_grains['kernelrelease'],
                 'osFamily':   self._os_family(minion_grains['kernel']),
